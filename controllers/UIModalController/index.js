@@ -1,11 +1,8 @@
 // @flow
 /* eslint-disable class-methods-use-this */
 import React from 'react';
-import { StyleSheet, Platform, Dimensions, Animated } from 'react-native';
-import PopupDialog, {
-    SlideAnimation,
-    FadeAnimation,
-} from 'react-native-popup-dialog';
+import { StyleSheet, Platform, Dimensions, Animated, Keyboard } from 'react-native';
+import Modal, { BottomModal, SlideAnimation, FadeAnimation } from 'react-native-modals';
 
 import type { ColorValue } from 'react-native/Libraries/StyleSheet/StyleSheetTypes';
 import type {
@@ -18,7 +15,6 @@ import type {
 import UIController from '../UIController';
 import UIDevice from '../../helpers/UIDevice';
 import UIFunction from '../../helpers/UIFunction';
-import UIStyle from '../../helpers/UIStyle';
 import UIColor from '../../helpers/UIColor';
 import UIConstant from '../../helpers/UIConstant';
 import UIModalNavigationBar from './UIModalNavigationBar';
@@ -49,6 +45,7 @@ export type ModalControllerState = ControllerState & {
     height?: ?number,
     controllerVisible?: boolean,
     header?: React$Node,
+    isVisible?: boolean,
 };
 
 export type ModalControllerShowArgs = ?boolean | {
@@ -86,7 +83,7 @@ export default class UIModalController<Props, State>
     onSelect: ?((any) => void);
     onSubmit: ?(() => void);
     bgAlpha: ?ColorValue;
-    dialog: ?PopupDialog;
+    dialog: ?Modal;
     marginBottom: Animated.Value;
     dy: Animated.Value;
     animation: SlideAnimation | FadeAnimation;
@@ -147,9 +144,7 @@ export default class UIModalController<Props, State>
     }
 
     onDidHide() {
-        this.setControllerVisible(false, () => {
-            this.dy.setValue(0);
-        });
+        this.setControllerVisible(false);
 
         const { onDidHide } = this.props;
         if (onDidHide) {
@@ -308,11 +303,6 @@ export default class UIModalController<Props, State>
         });
     }
 
-    setInitialSwipeState() {
-        this.dy.setValue(0);
-        this.bgAlpha = this.interpolateColor();
-    }
-
     setHeader(header: React$Node) {
         this.setStateSafely({ header });
     }
@@ -335,6 +325,7 @@ export default class UIModalController<Props, State>
 
     // Actions
     openDialog() {
+        this.setStateSafely({ isVisible: true });
         this.onWillAppear();
         if (this.dialog) {
             this.dialog.show();
@@ -343,6 +334,7 @@ export default class UIModalController<Props, State>
 
     async show(arg: ModalControllerShowArgs) {
         let open;
+
         if (!arg) {
             open = true;
         } else if (typeof arg === 'boolean') {
@@ -351,6 +343,7 @@ export default class UIModalController<Props, State>
             if (!arg.open) {
                 open = true;
             } else {
+                // eslint-disable-next-line prefer-destructuring
                 open = arg.open;
             }
             if (arg.onCancel) {
@@ -363,7 +356,6 @@ export default class UIModalController<Props, State>
                 this.onSelect = arg.onSelect;
             }
         }
-        this.setInitialSwipeState();
         await UIFunction.makeAsync(this.setControllerVisible.bind(this))(true);
         if (open) {
             this.openDialog();
@@ -371,6 +363,8 @@ export default class UIModalController<Props, State>
     }
 
     async hide() {
+        Keyboard.dismiss();
+        this.setStateSafely({ isVisible: false });
         if (this.dialog) {
             this.dialog.dismiss();
             this.onWillHide();
@@ -405,9 +399,11 @@ export default class UIModalController<Props, State>
         if (!this.dismissible) {
             return null;
         }
+
         if (this.state.header) {
             return this.state.header;
         }
+
         return (
             <UIModalNavigationBar
                 height={this.getNavigationBarHeight()}
@@ -416,9 +412,6 @@ export default class UIModalController<Props, State>
                 centralComponent={this.renderCentralHeader()}
                 rightComponent={this.renderRightHeader()}
                 bottomLine={this.isHeaderLineVisible()}
-                onMove={Animated.event([null, { dy: this.dy }])}
-                onRelease={this.onReleaseSwipe}
-                onCancel={this.onCancelPress}
                 cancelImage={this.getCancelImage()}
             />
         );
@@ -428,56 +421,37 @@ export default class UIModalController<Props, State>
         const {
             width, height, contentHeight, containerStyle, dialogStyle,
         } = this.getDialogStyle();
+
         const testIDProp = this.testID ? { testID: `${this.testID}_dialog` } : null;
+
+        const Component = (UIDevice.isTablet() || UIDevice.isTabletWeb()) ? Modal : BottomModal;
+
         return (
-            <PopupDialog
+            <Component
                 {...testIDProp}
                 ref={(popupDialog) => { this.dialog = popupDialog; }}
                 width={width}
                 height={height}
+                swipeDirection={this.dismissible ? ['down'] : false} // can be string or an array
+                onSwiping={Keyboard.dismiss}
+                onSwipeOut={this.onCancelPress}
                 containerStyle={containerStyle}
-                dialogStyle={dialogStyle}
-                dialogAnimation={this.animation} //
-                dialogTitle={this.renderModalNavigationBar()}
+                modalStyle={dialogStyle}
+                modalAnimation={this.animation} //
+                modalTitle={this.renderModalNavigationBar()}
                 dismissOnTouchOutside={false}
-                onDismissed={this.onDidHideHandler}
+                onDismiss={this.onDidHideHandler}
                 onShown={this.onDidAppearHandler}
-                overlayBackgroundColor="transparent"
+                visible={this.state.isVisible}
             >
-                <Animated.View
-                    style={{
-                        height: contentHeight + this.getSafeAreaInsets().bottom,
-                        paddingBottom: this.marginBottom,
-                    }}
-                >
-                    {this.renderContentView(contentHeight)}
-                </Animated.View>
-                {this.renderSpinnerOverlay()}
-            </PopupDialog>
+                {this.renderContentView(contentHeight)}
+            </Component>
         );
     }
 
+    // eslint-disable-next-line no-unused-vars
     renderContentView(contentHeight: number): React$Node {
         return null;
-    }
-
-    renderContainer() {
-        const backgroundColor = this.getBackgroundColor();
-        return (
-            <Animated.View
-                style={[
-                    // DO NOT USE UIStyle.absoluteFillObject here, as it has { overflow: 'hidden' }
-                    // And this brings a layout bug to Safari
-                    UIStyle.Common.absoluteFillContainer(),
-                    { backgroundColor },
-                ]}
-                onLayout={this.onLayout}
-            >
-                <Animated.View style={{ marginTop: this.dy }}>
-                    {this.renderDialog()}
-                </Animated.View>
-            </Animated.View>
-        );
     }
 
     render() {
@@ -485,8 +459,6 @@ export default class UIModalController<Props, State>
             return null;
         }
 
-        return this.renderContainer();
+        return this.renderDialog();
     }
-
-    // Internals
 }
