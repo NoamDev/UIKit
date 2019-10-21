@@ -79,6 +79,7 @@ export default class UIModalController<Props, State>
     fullscreen: boolean;
     dismissible: boolean;
     modal: boolean;
+    dialogOnWeb: boolean;
     adjustBottomSafeAreaInsetDynamically: boolean;
     onCancel: ?(() => void);
     onSelect: ?((any) => void);
@@ -116,7 +117,7 @@ export default class UIModalController<Props, State>
         };
     }
 
-    createRef = (modal: UIModalController) => {
+    createRef = (modal: UIModalController<Props, State> | null) => {
         this.dialog = modal;
     };
 
