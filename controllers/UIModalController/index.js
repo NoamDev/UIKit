@@ -15,7 +15,6 @@ import type {
 import UIController from '../UIController';
 import UIDevice from '../../helpers/UIDevice';
 import UIFunction from '../../helpers/UIFunction';
-import UIColor from '../../helpers/UIColor';
 import UIConstant from '../../helpers/UIConstant';
 import UIModalNavigationBar from './UIModalNavigationBar';
 
@@ -34,6 +33,8 @@ type OnLayoutEventArgs = {
 };
 
 export type ModalControllerProps = ControllerProps & {
+    dismissible?: boolean,
+    animation?: 'fade' | 'slide',
     onWillAppear?: () => void,
     onDidAppear?: () => void,
     onWillHide?: () => void,
@@ -109,11 +110,15 @@ export default class UIModalController<Props, State>
         this.marginBottom = new Animated.Value(0);
         this.dy = new Animated.Value(0);
         this.animation = UIModalController.animations.slide();
-        this.modalOnWeb = false;
+        this.dialogOnWeb = false;
         this.state = {
             ...(this.state: ModalControllerState & State),
         };
     }
+
+    createRef = (modal: UIModalController) => {
+        this.dialog = modal;
+    };
 
     // Events
     onWillAppear() {
@@ -173,14 +178,6 @@ export default class UIModalController<Props, State>
         this.setSize(width, height);
     };
 
-    onReleaseSwipe = (dy: number) => {
-        if (dy > UIConstant.swipeThreshold()) {
-            this.onCancelPress();
-        } else {
-            this.returnToTop();
-        }
-    };
-
     // Getters
     getNavigationBarHeight() {
         return this.shouldSwipeToDismiss() ? 30 : 48;
@@ -203,7 +200,7 @@ export default class UIModalController<Props, State>
         const navBarHeight = Platform.OS === 'web' || !this.dismissible
             ? 0
             : UIDevice.navigationBarHeight(); // navigation bar height above the modal controller
-        const modalForWebTopOffset = Platform.OS === 'web' && this.modalOnWeb ? (height / 2.0) : 0;
+        const modalForWebTopOffset = Platform.OS === 'web' && this.dialogOnWeb ? (height / 2.0) : 0;
 
         const containerStyle = {
             top: -1, // fix for 1px top offset
@@ -214,7 +211,7 @@ export default class UIModalController<Props, State>
 
         let dialogStyle = [
             styles.dialogOverflow,
-            this.modalOnWeb ? styles.modalOnWebDialogBorders : styles.dialogBorders,
+            this.dialogOnWeb ? styles.modalOnWebDialogBorders : styles.dialogBorders,
         ];
 
         // Need to enlarge the controller in order to hide a "bouncing" bottom border.
@@ -259,15 +256,6 @@ export default class UIModalController<Props, State>
         return Platform.OS !== 'web';
     }
 
-    interpolateColor(): ColorValue {
-        const { height } = Dimensions.get('window');
-        const maxValue = height - UIDevice.statusBarHeight() - this.getNavigationBarHeight();
-        return (this.dy: any).interpolate({
-            inputRange: [0, maxValue],
-            outputRange: [UIColor.overlay60(), UIColor.overlay0()],
-        });
-    }
-
     // Setters
     setContentInset(contentInset: ContentInset, animation: ?AnimationParameters) {
         super.setContentInset(contentInset);
@@ -309,7 +297,7 @@ export default class UIModalController<Props, State>
 
     // Getters
     getBackgroundColor() {
-        if (Platform.OS === 'web' && this.modalOnWeb) {
+        if (Platform.OS === 'web' && this.dialogOnWeb) {
             return this.bgAlpha;
         }
         return Platform.OS === 'web' && this.fullscreen
@@ -424,12 +412,14 @@ export default class UIModalController<Props, State>
 
         const testIDProp = this.testID ? { testID: `${this.testID}_dialog` } : null;
 
-        const Component = (UIDevice.isTablet() || UIDevice.isTabletWeb()) ? Modal : BottomModal;
+        const Component = (UIDevice.isTablet() || UIDevice.isTabletWeb() || UIDevice.isDesktopWeb())
+            ? Modal
+            : BottomModal;
 
         return (
             <Component
                 {...testIDProp}
-                ref={(popupDialog) => { this.dialog = popupDialog; }}
+                ref={this.createRef}
                 width={width}
                 height={height}
                 swipeDirection={this.dismissible ? ['down'] : false} // can be string or an array
