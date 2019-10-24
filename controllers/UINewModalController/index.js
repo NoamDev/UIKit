@@ -110,16 +110,6 @@ export default class UINewModalController<Props, State>
         };
     }
 
-    componentWillMount() {
-        this.keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => this.setStateSafely({ showHeader: false }));
-        this.keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => this.setStateSafely({ showHeader: true }));
-    }
-
-    componentWillUnmount() {
-        this.keyboardDidShowListener.remove();
-        this.keyboardDidHideListener.remove();
-    }
-
 
     createRef = (modal: UIModalController<Props, State> | null) => {
         this.modal = modal;
@@ -251,7 +241,7 @@ export default class UINewModalController<Props, State>
     }
 
     // Actions
-    async show() {
+    show() {
         this.onWillAppear();
         this.setStateSafely({ isVisible: true, showContent: true });
     }
