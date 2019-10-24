@@ -1,3 +1,4 @@
+// @flow
 import UIAccountPicker from './components/UIAccountPicker';
 import UIAccountPickerScreen from './components/UIAccountPicker/controllers/UIAccountPickerScreen';
 import UIActionComponent from './components/UIActionComponent';
@@ -63,6 +64,7 @@ import UILocalized from './helpers/UILocalized';
 import UIMenuView from './components/menus/UIMenuView';
 import UIMenuBackground from './components/menus/UIMenuBackground';
 import UIModalController from './controllers/UIModalController';
+import UINewModalController from './controllers/UINewModalController';
 import UINavigationBackButton from './components/navigation/UINavigationBackButton';
 import UINavigationBar from './components/navigation/UINavigationBar';
 import UINavigationCloseButton from './components/navigation/UINavigationCloseButton';
@@ -203,6 +205,7 @@ export {
     UIMenuBackground,
     UIMenuView,
     UIModalController,
+    UINewModalController,
     UINavigationBackButton,
     UINavigationBar,
     UINavigationCloseButton,
