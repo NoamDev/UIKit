@@ -156,6 +156,33 @@ export type ButtonProps = ActionProps & {
 type State = ActionState;
 
 export default class UIButton extends UIActionComponent<ButtonProps, State> {
+    static buttonSize = {
+        default: 'default',
+        large: 'l',
+        medium: 'm',
+        small: 's',
+    };
+
+    static buttonShape = {
+        default: 'default',
+        radius: 'radius',
+        rounded: 'rounded',
+        full: 'full',
+    };
+
+    static buttonStyle = {
+        full: 'full',
+        border: 'border',
+        link: 'link',
+    };
+
+    static textAlign = {
+        center: 'center',
+        left: 'left',
+        right: 'right',
+    };
+
+    // Deprecated
     static ButtonSize = {
         Default: 'default',
         Large: 'l',
@@ -309,7 +336,7 @@ export default class UIButton extends UIActionComponent<ButtonProps, State> {
             style.push(this.props.iconRStyle || this.getIconTintStyle());
         }
 
-        return <Image source={icon || iconDefault} style={style} />;
+        return <Image source={icon || iconDefault} style={style} key={`buttonIcon~${position}`} />;
     }
 
     renderIconL() {
@@ -339,6 +366,7 @@ export default class UIButton extends UIActionComponent<ButtonProps, State> {
         const titleStyle = this.getTitleColorStyle();
         return (
             <Text
+                key="buttonTitle"
                 style={[
                     this.getTitleFontStyle(),
                     this.props.textStyle,

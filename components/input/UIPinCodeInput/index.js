@@ -14,6 +14,8 @@ import UILocalized from '../../../helpers/UILocalized';
 type State = {
     pin: string,
     wrongPin: boolean,
+    rightPin: boolean,
+    description: string,
     shakeMargin: number,
 };
 
@@ -60,6 +62,12 @@ const styleProperties = {
         borderRadius: dotSize / 2,
         backgroundColor: UIColor.error(),
     },
+    dotGreen: {
+        width: dotSize,
+        height: dotSize,
+        borderRadius: dotSize / 2,
+        backgroundColor: UIColor.success(),
+    },
     dotGray: {
         width: dotSize / 2,
         height: dotSize / 2,
@@ -93,6 +101,8 @@ export default class UIPinCodeInput extends UIComponent<Props, State> {
         this.state = {
             pin: '',
             wrongPin: false,
+            rightPin: false,
+            description: '',
             shakeMargin: 0,
         };
     }
@@ -120,13 +130,13 @@ export default class UIPinCodeInput extends UIComponent<Props, State> {
         const { length } = this.state.pin;
         const pin = this.state.pin.substr(0, length - 1);
         this.setPin(pin);
-    }
+    };
 
     onPressPredefined = () => {
         // generate string consisted of '1' and with length = props.pinCodeLenght
         const str = Array.prototype.join.call({ length: (this.props.pinCodeLenght || -1) + 1 }, '1');
         this.setPin(str);
-    }
+    };
 
     // setters
     setPin(pin: string) {
@@ -152,16 +162,35 @@ export default class UIPinCodeInput extends UIComponent<Props, State> {
         });
     }
 
-    wrongPin() {
-        setTimeout(() => {
-            this.setStateSafely({ wrongPin: true });
-            Vibration.vibrate(500);
-            this.shakeIndicator();
-        }, 300);
-        setTimeout(() => {
-            this.setStateSafely({ wrongPin: false });
-            this.resetPin();
-        }, 600);
+    wrongPin(description?: string): Promise<void> {
+        const delay = UIConstant.animationDuration();
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                this.setStateSafely({ wrongPin: true, description });
+                Vibration.vibrate(500);
+                this.shakeIndicator();
+            }, delay);
+            setTimeout(() => {
+                this.setStateSafely({ wrongPin: false, description: '' });
+                this.resetPin();
+                resolve();
+            }, delay + UIConstant.animationAccentInteractionDurationNormal());
+        });
+    }
+
+    rightPin(description?: string): Promise<void> {
+        const delay = UIConstant.animationDuration();
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                this.setStateSafely({ rightPin: true, description });
+            }, delay);
+
+            setTimeout(() => {
+                this.setStateSafely({ rightPin: false, description: '' });
+                this.resetPin();
+                resolve();
+            }, delay + UIConstant.animationAccentInteractionDurationFast());
+        });
     }
 
     resetShake() {
@@ -202,10 +231,14 @@ export default class UIPinCodeInput extends UIComponent<Props, State> {
             dotStyle = styles.dotRed;
         } else if (item > this.state.pin.length) {
             dotStyle = styles.dotGray;
+        } else if (this.state.rightPin) {
+            dotStyle = styles.dotGreen;
         } else {
             dotStyle = styles.dotBlue;
             testID = 'pinValueSet';
         }
+
+
         return (
             <View
                 testID={testID}
@@ -231,19 +264,30 @@ export default class UIPinCodeInput extends UIComponent<Props, State> {
     }
 
     renderDescription() {
+        // eslint-disable-next-line no-nested-ternary
+        const color = this.state.wrongPin
+            ? UIColor.error()
+            : this.state.rightPin
+                ? UIColor.success()
+                : this.props.pinDescriptionColor;
+
+        const description = (this.state.wrongPin || this.state.rightPin)
+            ? this.state.description
+            : this.props.pinDescription;
+
         const descStyle = StyleSheet.create({
             descColor: {
-                color: this.props.pinDescriptionColor,
+                color,
                 minHeight: UIConstant.mediumCellHeight(),
             },
         });
+
         return (
             <UILabel
                 testID={this.props.commentTestID}
-                style={[UIStyle.Margin.bottomMassive(),
-                    descStyle.descColor]}
+                style={[UIStyle.Margin.bottomMassive(), descStyle.descColor]}
                 role={UILabel.Role.CaptionTertiary}
-                text={this.props.pinDescription}
+                text={description}
                 numberOfLines={2}
                 selectable={false}
             />

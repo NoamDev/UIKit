@@ -248,6 +248,12 @@ export type DetailsProps = ActionProps & {
     */
     onSubmitEditing?: () => void,
     /**
+    Callback that is called when the text input selection is changed.
+    This will be called with { nativeEvent: { selection: { start, end } } }.
+    This prop requires multiline={true} to be set.
+    */
+    onSelectionChange?: ?(e: any) => void,
+    /**
     Callback that is called when a key is pressed.
     This will be called with { nativeEvent: { key: keyValue } } where keyValue is 'Enter' or 'Backspace'
     for respective keys and the typed-in character otherwise including ' ' for space.
@@ -287,6 +293,11 @@ export type DetailsProps = ActionProps & {
     @default false
     */
     secureTextEntry: boolean,
+    /**
+    Set cursor position.
+    @default null
+    */
+    selection?: ?{start: number, end: number},
     /**
     If maxLengh is set, show how many symbols left to enter.
     @default false
@@ -447,6 +458,12 @@ export default class UIDetailsInput<Props, State>
         }
     };
 
+    onSelectionChange = (e: any): void => {
+        if (this.props.onSelectionChange) {
+            this.props.onSelectionChange(e);
+        }
+    };
+
     // Setters
     setFocused(focused: boolean = true) {
         this.setStateSafely({ focused });
@@ -540,6 +557,10 @@ export default class UIDetailsInput<Props, State>
 
     getRequired(): boolean {
         return this.props.required;
+    }
+
+    getSelection() {
+        return this.props.selection;
     }
 
     hidePlaceholder() {
@@ -710,6 +731,8 @@ export default class UIDetailsInput<Props, State>
                 placeholder={this.getInlinePlaceholder()}
                 placeholderTextColor={placeholderColor}
                 ref={(component) => { this.textInput = component; }}
+                onSelectionChange={this.onSelectionChange}
+                selection={this.getSelection()}
                 {...returnKeyTypeProp}
                 {...blurOnSubmitProp}
                 style={[
@@ -994,10 +1017,12 @@ UIDetailsInput.defaultProps = {
     onSubmitEditing: () => {},
     onKeyPress: () => {},
     onHeightChange: () => {},
+    onSelectionChange: null,
     onPressComment: null,
     placeholder: '',
     required: false,
     secureTextEntry: false,
+    selection: null,
     showSymbolsLeft: false,
     style: null,
     submitDisabled: false,

@@ -21,6 +21,7 @@ const LabelRole = Object.freeze({
     SmallMedium: 'smallMedium',
     SmallBold: 'smallBold',
     SmallRegular: 'smallRegular',
+    // TODO: add regular tertiary role
     TinyRegular: 'tinyRegular',
     TinyMedium: 'tinyMedium',
     TinyTertiary: 'tinyTertiary',
@@ -41,6 +42,7 @@ type Props = {
     text: string,
     role: LabelRoleValue,
     useDefaultSpace?: boolean,
+    testID?: string,
 }
 
 type State = {
@@ -155,13 +157,13 @@ export default class UILabel extends UIComponent<Props, State> {
     renderText(textStyle: TextStyleProp[]): React$Node {
         const {
             useDefaultSpace,
-            role, text,
+            role, text, testID,
             ...props
         } = this.props;
         return (
             <Text
                 {...props}
-                testID={`label_text_${text}`}
+                testID={testID || `label_text_${text}`}
                 style={textStyle}
             >
                 {this.getText()}
