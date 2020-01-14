@@ -1,9 +1,10 @@
 // @flow
 /* eslint-disable class-methods-use-this */
 import React from 'react';
-import { StyleSheet, Platform, Dimensions, Animated, PanResponder } from 'react-native';
+import { Animated, Dimensions, Platform, StyleSheet } from 'react-native';
 import PopupDialog, { FadeAnimation } from 'react-native-popup-dialog';
 import type { Style } from 'react-style-proptype/src/Style.flow';
+import { PanGestureHandler } from 'react-native-gesture-handler';
 
 import type { ColorValue } from 'react-native/Libraries/StyleSheet/StyleSheetTypes';
 import type {
@@ -12,8 +13,8 @@ import type {
     ControllerProps,
     ControllerState,
 } from '../UIController';
-
 import UIController from '../UIController';
+import type { SafeAreaInsets } from '../../helpers/UIDevice';
 import UIDevice from '../../helpers/UIDevice';
 import UIFunction from '../../helpers/UIFunction';
 import UIStyle from '../../helpers/UIStyle';
@@ -21,8 +22,6 @@ import UIColor from '../../helpers/UIColor';
 import UIConstant from '../../helpers/UIConstant';
 import UIModalNavigationBar from './UIModalNavigationBar';
 import SlideAnimation from './utils/SlideAnimation';
-
-import type { SafeAreaInsets } from '../../helpers/UIDevice';
 
 const fullScreenDialogWidth = 600;
 const fullScreenDialogHeight = 600;
@@ -134,26 +133,6 @@ export default class UIModalController<Props, State>
         this.state = {
             ...(this.state: ModalControllerState & State),
         };
-
-        this.onMove = Animated.event([null, { dy: this.dy }]);
-
-        this.panResponder = PanResponder.create({
-            // Ask to be the responder:
-            onStartShouldSetPanResponder: () => this.dismissible,
-            onStartShouldSetPanResponderCapture: () => false,
-            onMoveShouldSetPanResponder: () => this.dismissible,
-            onMoveShouldSetPanResponderCapture: () => this.dismissible,
-
-            // Handling responder events
-            onPanResponderMove: (evt, gestureState) => {
-                if (gestureState.dy > 0) {
-                    this.onMove(evt, gestureState);
-                }
-            },
-            onPanResponderRelease: (evt, gestureState) => {
-                this.onReleaseSwipe(gestureState.dy);
-            },
-        });
     }
 
     async loadSafeAreaInsets(): Promise<SafeAreaInsets> {
@@ -504,7 +483,9 @@ export default class UIModalController<Props, State>
         return (
             <PopupDialog
                 {...testIDProp}
-                ref={(popupDialog) => { this.dialog = popupDialog; }}
+                ref={(popupDialog) => {
+                    this.dialog = popupDialog;
+                }}
                 width={width}
                 height={height}
                 containerStyle={containerStyle}
@@ -545,23 +526,32 @@ export default class UIModalController<Props, State>
         return null;
     }
 
+    onPanGestureEvent = Animated.event([{ nativeEvent: { y: this.dy } }], { useNativeDriver: true });
+
     renderContainer() {
         const backgroundColor = this.getBackgroundColor();
         return (
-            <Animated.View
-                style={[
-                    // DO NOT USE UIStyle.absoluteFillObject here, as it has { overflow: 'hidden' }
-                    // And this brings a layout bug to Safari
-                    UIStyle.Common.absoluteFillContainer(),
-                    { backgroundColor },
-                ]}
-                onLayout={this.onLayout}
-                {...this.panResponder.panHandlers}
+            <PanGestureHandler
+                onGestureEvent={this.onPanGestureEvent}
             >
-                <Animated.View style={{ marginTop: this.dy }}>
-                    {this.renderDialog()}
+                <Animated.View
+                    style={[
+                        // DO NOT USE UIStyle.absoluteFillObject here,
+                        // as it has { overflow: 'hidden' }
+                        // And this brings a layout bug to Safari
+                        UIStyle.Common.absoluteFillContainer(),
+                        { backgroundColor },
+                    ]}
+                    onLayout={this.onLayout}
+                >
+                    <Animated.View style={{
+                        marginTop: this.dy,
+                        // transform: [{ translateY: this.dy }],
+                    }}>
+                        {this.renderDialog()}
+                    </Animated.View>
                 </Animated.View>
-            </Animated.View>
+            </PanGestureHandler>
         );
     }
 
