@@ -4,7 +4,7 @@ import React from 'react';
 import { Animated, Dimensions, Platform, StyleSheet } from 'react-native';
 import PopupDialog, { FadeAnimation } from 'react-native-popup-dialog';
 import type { Style } from 'react-style-proptype/src/Style.flow';
-import { PanGestureHandler } from 'react-native-gesture-handler';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 
 import type { ColorValue } from 'react-native/Libraries/StyleSheet/StyleSheetTypes';
 import type {
@@ -526,32 +526,41 @@ export default class UIModalController<Props, State>
         return null;
     }
 
-    onPanGestureEvent = Animated.event([{ nativeEvent: { y: this.dy } }], { useNativeDriver: true });
-
     renderContainer() {
         const backgroundColor = this.getBackgroundColor();
         return (
-            <PanGestureHandler
-                onGestureEvent={this.onPanGestureEvent}
+            <Animated.View
+                style={[
+                    // DO NOT USE UIStyle.absoluteFillObject here,
+                    // as it has { overflow: 'hidden' }
+                    // And this brings a layout bug to Safari
+                    UIStyle.Common.absoluteFillContainer(),
+                    { backgroundColor },
+                ]}
+                onLayout={this.onLayout}
             >
-                <Animated.View
-                    style={[
-                        // DO NOT USE UIStyle.absoluteFillObject here,
-                        // as it has { overflow: 'hidden' }
-                        // And this brings a layout bug to Safari
-                        UIStyle.Common.absoluteFillContainer(),
-                        { backgroundColor },
-                    ]}
-                    onLayout={this.onLayout}
+                <PanGestureHandler
+                    onHandlerStateChange={({ nativeEvent: { state, translationY } }) => {
+                        if (state === State.END || state === State.CANCELLED) {
+                            this.onReleaseSwipe(translationY);
+                        }
+                    }}
+                    onGestureEvent={evt => {
+                        if (evt.nativeEvent.translationY > 0) {
+                            this.dy.setValue(evt.nativeEvent.translationY);
+                        }
+                    }}
                 >
-                    <Animated.View style={{
-                        marginTop: this.dy,
-                        // transform: [{ translateY: this.dy }],
-                    }}>
+                    <Animated.View
+                        style={{
+                            // marginTop: this.dy,
+                            transform: [{ translateY: this.dy }],
+                        }}
+                    >
                         {this.renderDialog()}
                     </Animated.View>
-                </Animated.View>
-            </PanGestureHandler>
+                </PanGestureHandler>
+            </Animated.View>
         );
     }
 
