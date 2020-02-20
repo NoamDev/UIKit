@@ -560,10 +560,6 @@ const UITextStyle = StyleSheet.create({
         ...action,
         ...UIFont.bodyMedium(),
     },
-    actionBodyBold: {
-        ...action,
-        ...UIFont.bodyBold(),
-    },
 
     // Small - fontSize: 16, lineHeight: 20
     actionSmallMedium: {
