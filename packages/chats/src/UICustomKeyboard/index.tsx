@@ -81,7 +81,7 @@ export function UICustomKeyboard(props: Props) {
         const { height } = e.endCoordinates;
         const kHeight = height - insets.bottom - inputHeight.current;
         // N.B. `<` sign is important! (do not set `!==`)
-        if (keyboardHeight.current < kHeight) {
+        if (kHeight > keyboardHeight.current) {
             keyboardHeight.current = kHeight;
 
             updateContentBottomInset();
