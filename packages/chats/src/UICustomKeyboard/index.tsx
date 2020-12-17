@@ -49,8 +49,6 @@ export const UICustomKeyboardUtils = {
     dismiss,
 };
 
-let trackingViewIsReady = false; // global flag to learn if KeyboardTrackingView usable
-
 type Props = KeyboardAccessoryViewProps & {
     onHeightChange?: OnHeightChange;
 };
@@ -128,32 +126,10 @@ export function UICustomKeyboard(props: Props) {
         }
     };
 
-    // Tracking View Ready Hack
-    const [trackingViewReady, setTrackingViewReady] = React.useState<boolean>(
-        trackingViewIsReady,
-    );
-
-    const makeKeyboardTrackingReady = () => {
-        if (Platform.OS !== 'ios' || trackingViewIsReady) {
-            return; // no need
-        }
-
-        trackingViewIsReady = true;
-
-        // We are to re-render the keyboard tracking view once mounted.
-        // This looks like a hack to make it work, and it actually is! :)
-        setTimeout(() => {
-            // Now re-render
-            setTrackingViewReady(trackingViewIsReady);
-        }, 1000); // wait for a sec
-    };
-
     // Life-cycle
     React.useEffect(() => {
         // Did mount
         initKeyboardListeners();
-        // KeyboardTrackingView might be not ready. Need to re-render if so.
-        makeKeyboardTrackingReady();
         // Will unmount
         return deinitKeyboardListeners;
     }, []);
@@ -173,7 +149,6 @@ export function UICustomKeyboard(props: Props) {
 
     return (
         <KeyboardAccessoryView
-            key={`UICustomKeyboard:${trackingViewReady.toString()}`}
             useSafeArea={false}
             addBottomView={false}
             manageScrollView={false}
