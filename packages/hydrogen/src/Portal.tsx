@@ -192,16 +192,22 @@ export class PortalManager extends React.PureComponent<
             return null;
         }
 
-        return (
-            <View
-                key={`portal_${key}`}
-                collapsable={false}
-                pointerEvents="box-none"
-                style={portal.absoluteFill ? StyleSheet.absoluteFill : null}
-            >
-                {portal.children}
-            </View>
-        );
+        if (portal.absoluteFill) {
+            return (
+                <View
+                    key={`portal_${key}`}
+                    collapsable={false}
+                    pointerEvents="box-none"
+                    // Pick `zIndex` for PortalManager thus to overlap all components
+                    // http://softwareas.com/whats-the-maximum-z-index (as per Safari 0-3 threshold)
+                    style={[StyleSheet.absoluteFill, { zIndex: 16777271 }]}
+                >
+                    {portal.children}
+                </View>
+            );
+        }
+
+        return portal.children;
     }
 
     renderLastPortal() {
