@@ -12,6 +12,8 @@ import Animated from 'react-native-reanimated';
 import { ColorVariants, useTheme } from '../Colors';
 import { Typography, TypographyVariants } from '../Typography';
 
+import { useColorParts } from '../useColorParts';
+
 export type FloatingLabelProps = {
     children: string;
     isFolded: boolean;
@@ -66,18 +68,18 @@ type LabelProps = {
 };
 const Label: React.FC<LabelProps> = (props: LabelProps) => {
     const { children, animatedPosition, labelOpacity } = props;
-    const theme = useTheme();
+    const { colorParts: textTertiaryParts } = useColorParts(ColorVariants.TextTertiary);
+    const { colorParts: textSecondaryParts } = useColorParts(ColorVariants.TextSecondary);
     const labelStyle = Animated.useAnimatedStyle(() => {
         return {
             color: Animated.interpolateColor(
                 animatedPosition.value,
                 [POSITION_FOLDED, POSITION_EXPANDED],
                 [
-                    theme[ColorVariants.TextTertiary] as string,
-                    theme[ColorVariants.TextSecondary] as string,
+                    `rgba(${textTertiaryParts},${labelOpacity.value})`,
+                    `rgba(${textSecondaryParts},${labelOpacity.value})`
                 ],
             ),
-            opacity: labelOpacity.value,
         };
     });
     return (
@@ -222,11 +224,12 @@ export const FloatingLabel: React.FC<FloatingLabelProps> = (
                 },
             ],
         };
-    }, [expandedLabelWidth, expandedLabelHeight]);
+    });
 
     if (!validateChildren(children)) {
         return null;
     }
+
     return (
         <View style={styles.container} pointerEvents="none">
             <Animated.View
