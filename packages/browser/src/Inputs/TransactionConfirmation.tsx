@@ -139,9 +139,7 @@ export function TransactionConfirmation({
                         title={uiLocalized.Browser.TransactionConfirmation.Confirm}
                         type={UIMsgButtonType.Secondary}
                         onPress={onApprove}
-                        layout={{
-                            marginRight: UIConstant.tinyContentOffset(),
-                        }}
+                        layout={{ marginRight: UIConstant.tinyContentOffset() }}
                     />
                     <UIMsgButton
                         testID="transaction_confirmation_cancel"
